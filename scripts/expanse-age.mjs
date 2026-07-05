@@ -138,7 +138,7 @@ Hooks.once("diceSoNiceReady", async (dice3d) => {
   try {
     registerDiceSoNice(dice3d);
     const chosen = game.settings.get(MODULE_ID, "defaultDiceStyle");
-    if (VARIANT_BY_ID[chosen]) await applyUserAppearance(chosen, { force: false });
+    if (VARIANT_BY_ID[chosen]) await applyUserAppearance(chosen, { force: true });
   } catch (err) {
     console.error(`${MODULE_ID} | Échec de l'enregistrement Dice So Nice :`, err);
   }

@@ -12,7 +12,7 @@
   "EXPANSE_AGE.Style.ProtogenDark": "The Expanse — Protogen (Dark)",
   "EXPANSE_AGE.Style.ProtogenLight": "The Expanse — Protogen (Light)",
   "EXPANSE_AGE.Settings.DefaultDiceStyle.Name": "Default The Expanse dice appearance",
-  "EXPANSE_AGE.Settings.DefaultDiceStyle.Hint": "Dice So Nice dice system applied by default to players who have not customized their appearance. You can also pick the system manually in Dice So Nice's \"Configure Dice\".",
+  "EXPANSE_AGE.Settings.DefaultDiceStyle.Hint": "Faction whose The Expanse dice are applied to your rolls on every load (via Dice So Nice). Choose \"None\" to manage the appearance yourself in Dice So Nice.",
   "EXPANSE_AGE.Settings.DefaultDiceStyle.None": "None (leave Dice So Nice)",
   "EXPANSE_AGE.Macro.RollName": "Expanse Roll"
 }
