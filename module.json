@@ -1,0 +1,128 @@
+{
+  "id": "expanse-age-fr",
+  "title": "The Expanse — Addon (AGE System)",
+  "description": "Module addon non officiel pour jouer à The Expanse (© Green Ronin) avec le système AGE System (age-system) sur FoundryVTT v13. Fournit des compendiums en français (Prouesses, Armes, Armures & boucliers, Talents, Compétences) et l'habillage des dés officiels de The Expanse via Dice So Nice.",
+  "version": "0.1.0",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "authors": [
+    {
+      "name": "Delva"
+    }
+  ],
+  "relationships": {
+    "systems": [
+      {
+        "id": "age-system",
+        "type": "system",
+        "compatibility": {
+          "minimum": "4.0.0"
+        }
+      }
+    ],
+    "recommends": [
+      {
+        "id": "dice-so-nice",
+        "type": "module",
+        "reason": "Affichage 3D des dés officiels de The Expanse (habillage par faction)."
+      }
+    ]
+  },
+  "esmodules": [
+    "scripts/expanse-age.mjs"
+  ],
+  "styles": [
+    "styles/expanse-age.css"
+  ],
+  "languages": [
+    {
+      "lang": "fr",
+      "name": "Français",
+      "path": "lang/fr.json"
+    },
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "packs": [
+    {
+      "name": "prouesses",
+      "label": "Prouesses (Péripéties)",
+      "path": "packs/prouesses",
+      "type": "Item",
+      "system": "age-system",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "armes",
+      "label": "Armes",
+      "path": "packs/armes",
+      "type": "Item",
+      "system": "age-system",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "armures",
+      "label": "Armures & boucliers",
+      "path": "packs/armures",
+      "type": "Item",
+      "system": "age-system",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "talents",
+      "label": "Talents (Spécialisations)",
+      "path": "packs/talents",
+      "type": "Item",
+      "system": "age-system",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "competences",
+      "label": "Compétences (Focus)",
+      "path": "packs/competences",
+      "type": "Item",
+      "system": "age-system",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    },
+    {
+      "name": "macros",
+      "label": "Macros",
+      "path": "packs/macros",
+      "type": "Macro",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      }
+    }
+  ],
+  "packFolders": [
+    {
+      "name": "The Expanse (AGE)",
+      "sorting": "m",
+      "packs": ["prouesses", "talents", "competences", "armes", "armures", "macros"]
+    }
+  ],
+  "url": "https://github.com/Delva/foundry_expanse_add-on",
+  "manifest": "https://github.com/Delva/foundry_expanse_add-on/releases/latest/download/module.json",
+  "download": "https://github.com/Delva/foundry_expanse_add-on/releases/latest/download/module.zip"
+}

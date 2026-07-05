@@ -1,0 +1,66 @@
+name: Release
+
+# Déclenché en poussant un tag de version, ex. : git tag v0.1.0 && git push --tags
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Déduire la version depuis le tag
+        id: version
+        run: echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Injecter version / manifest / download dans module.json
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          SERVER: ${{ github.server_url }}
+        run: |
+          node <<'EOF'
+          const fs = require("fs");
+          const m = JSON.parse(fs.readFileSync("module.json", "utf8"));
+          const { VERSION, REPO, TAG, SERVER } = process.env;
+          m.version = VERSION;
+          // Manifest stable = module.json de la dernière release (install ET mises à jour).
+          m.manifest = `${SERVER}/${REPO}/releases/latest/download/module.json`;
+          // Download = le zip de CETTE version précise.
+          m.download = `${SERVER}/${REPO}/releases/download/${TAG}/module.zip`;
+          fs.writeFileSync("module.json", JSON.stringify(m, null, 2) + "\n");
+          console.log(`module.json -> version ${VERSION}`);
+          EOF
+
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Compiler les compendiums
+        run: |
+          npm install --no-audit --no-fund
+          npm run build:packs
+
+      - name: Construire l'archive du module
+        run: |
+          zip -r module.zip . \
+            -x ".git/*" ".github/*" "node_modules/*" "tools/*" "*.zip" ".gitignore" "package.json" "package-lock.json"
+
+      - name: Publier la release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: The Expanse — Addon (AGE) ${{ github.ref_name }}
+          files: |
+            module.json
+            module.zip
+          fail_on_unmatched_files: true
+          generate_release_notes: true

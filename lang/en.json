@@ -1,0 +1,12 @@
+{
+  "EXPANSE_AGE.Faction.Earth": "Earther (UN)",
+  "EXPANSE_AGE.Faction.Mars": "Martian (MCRN)",
+  "EXPANSE_AGE.Faction.Belt": "Belter (OPA)",
+  "EXPANSE_AGE.Faction.Protogen": "Protogen",
+  "EXPANSE_AGE.Variant.Dark": "dark",
+  "EXPANSE_AGE.Variant.Light": "light",
+  "EXPANSE_AGE.Settings.DefaultDiceStyle.Name": "Default The Expanse dice appearance",
+  "EXPANSE_AGE.Settings.DefaultDiceStyle.Hint": "Dice So Nice colorset pre-selected if you have not chosen one yet. Does not overwrite an existing choice.",
+  "EXPANSE_AGE.Settings.DefaultDiceStyle.None": "None (leave Dice So Nice)",
+  "EXPANSE_AGE.Macro.RollName": "Expanse Roll"
+}

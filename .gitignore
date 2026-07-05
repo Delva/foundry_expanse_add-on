@@ -1,0 +1,17 @@
+# OS / éditeurs
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Archive de release construite en CI
+*.zip
+
+# Node
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# Packs compilés (LevelDB) — construits par tools/build-packs.mjs, sources dans tools/pack-data.mjs
+/packs/

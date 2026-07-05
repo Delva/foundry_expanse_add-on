@@ -1,0 +1,13 @@
+{
+  "name": "expanse-age-fr",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Outils de build du module addon FoundryVTT « The Expanse — Addon (AGE System) » (génération des compendiums).",
+  "scripts": {
+    "build:packs": "node tools/build-packs.mjs"
+  },
+  "devDependencies": {
+    "classic-level": "^1.4.1"
+  }
+}

@@ -1,0 +1,15 @@
+/* The Expanse — Addon (AGE System) : styles légers pour les cartes de chat de dés. */
+
+.dice-roll .expanse-age-dice img,
+.chat-message .expanse-age-dice img {
+  height: 2.4em;
+  width: 2.4em;
+  vertical-align: middle;
+  margin: 0 0.1em;
+}
+
+.expanse-age-note {
+  font-size: 0.85em;
+  opacity: 0.8;
+  font-style: italic;
+}

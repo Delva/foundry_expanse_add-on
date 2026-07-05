@@ -1,0 +1,12 @@
+{
+  "EXPANSE_AGE.Faction.Earth": "Terrien (ONU)",
+  "EXPANSE_AGE.Faction.Mars": "Martien (MCRN)",
+  "EXPANSE_AGE.Faction.Belt": "Ceinturien (APE)",
+  "EXPANSE_AGE.Faction.Protogen": "Protogène",
+  "EXPANSE_AGE.Variant.Dark": "sombre",
+  "EXPANSE_AGE.Variant.Light": "clair",
+  "EXPANSE_AGE.Settings.DefaultDiceStyle.Name": "Apparence de dés The Expanse par défaut",
+  "EXPANSE_AGE.Settings.DefaultDiceStyle.Hint": "Jeu de couleurs Dice So Nice pré-sélectionné si vous n'en avez pas encore choisi. N'écrase pas un choix existant.",
+  "EXPANSE_AGE.Settings.DefaultDiceStyle.None": "Aucune (laisser Dice So Nice)",
+  "EXPANSE_AGE.Macro.RollName": "Jet Expanse"
+}
