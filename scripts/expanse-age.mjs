@@ -33,6 +33,13 @@ const VARIANTS = [
 
 const VARIANT_BY_ID = Object.fromEntries(VARIANTS.map((v) => [v.id, v]));
 
+/** Variante contrastée = même faction, style opposé (pour le dé de Péripéties, façon « drama die »). */
+function contrastId(variantId) {
+  const v = VARIANT_BY_ID[variantId];
+  if (!v) return variantId;
+  return `expanse-${v.faction}-${v.style === "dark" ? "light" : "dark"}`;
+}
+
 const facePath = (faction, n, style) =>
   `modules/${MODULE_ID}/ui/dice/${faction}/${faction}-${n}-${style}.png`;
 const bumpPath = (faction, n) =>
@@ -149,13 +156,15 @@ async function applyUserAppearance(dice3d, variantId) {
   appearance.global.colorset = variantId;
   await game.user.setFlag("dice-so-nice", "appearance", appearance);
 
-  // age-system force la couleur du dé de Péripéties via son réglage « stuntSoNice »
-  // (défaut « bronze » = doré). On l'aligne sur notre colorset Expanse pour un dé
-  // cohérent et lisible (même faction que les dés d'attaque).
+  // Dé de Péripéties (« drama die ») : contraste façon officiel = variante opposée de la
+  // même faction. On aligne le réglage age-system « stuntSoNice » (défaut « bronze » doré)
+  // sur ce colorset contrasté ; le système/faces sont basculés au lancer par le hook
+  // diceSoNiceRollStart (car age-system force le système du dé de Péripéties sur le global).
+  const contrast = contrastId(variantId);
   if (game.system?.id === "age-system" && game.settings.settings.has("age-system.stuntSoNice")) {
     try {
-      if (game.settings.get("age-system", "stuntSoNice") !== variantId) {
-        await game.settings.set("age-system", "stuntSoNice", variantId);
+      if (game.settings.get("age-system", "stuntSoNice") !== contrast) {
+        await game.settings.set("age-system", "stuntSoNice", contrast);
       }
     } catch (err) {
       console.warn(`${MODULE_ID} | Impossible d'aligner le dé de Péripéties (age-system.stuntSoNice) :`, err);
@@ -192,6 +201,35 @@ Hooks.once("ready", () => {
     ui.notifications?.warn(
       "The Expanse — Addon : ce module est prévu pour le système « age-system » (mode The Expanse)."
     );
+  }
+});
+
+/**
+ * Contraste du dé de Péripéties : age-system force son système sur le global (faces de la
+ * faction sombre) et seule sa couleur est réglable via stuntSoNice. Pour un vrai contraste
+ * lisible (faces + corps de la variante opposée, comme le « drama die » officiel), on
+ * bascule l'apparence du dé de Péripéties (dice[1] du jet age-system) juste avant le rendu.
+ */
+Hooks.on("diceSoNiceRollStart", (messageId, context) => {
+  try {
+    const chosen = game.settings.get(MODULE_ID, "defaultDiceStyle");
+    if (!VARIANT_BY_ID[chosen]) return;
+    const contrast = contrastId(chosen);
+    const roll = context?.roll;
+    const dice = roll?.dice;
+    if (!Array.isArray(dice) || dice.length < 2) return;
+
+    const stunt = dice[1]; // age-system place le dé de Péripéties en 2e terme du jet
+    const sys = stunt?.options?.appearance?.system;
+    if (!sys || !String(sys).startsWith("expanse-")) return; // uniquement nos jets Expanse
+
+    stunt.options.appearance = {
+      ...stunt.options.appearance,
+      system: contrast,
+      colorset: contrast
+    };
+  } catch (err) {
+    console.warn(`${MODULE_ID} | Override du dé de Péripéties échoué :`, err);
   }
 });
 
