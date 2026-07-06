@@ -46,9 +46,15 @@ function dsnSystems(dice3d) {
   return dice3d?.DiceFactory?.systems ?? null;
 }
 
-/** Enregistre un système DSN + colorset + preset d6 par variante. Retourne les ids OK. */
-function registerDiceSoNice(dice3d) {
+/**
+ * Enregistre un système DSN + colorset + preset d6 par variante, PUIS précharge les
+ * textures de chaque preset. Le préchargement est indispensable : create() lit
+ * diceobj.labels sans charger les images lui-même ; sans loadTextures() préalable, les
+ * labels restent des chaînes et DSN dessine le chemin en texte. Retourne les ids OK.
+ */
+async function registerDiceSoNice(dice3d) {
   const registered = [];
+  const loadPromises = [];
   for (const v of VARIANTS) {
     const label = game.i18n.localize(v.styleKey);
     try {
@@ -79,14 +85,26 @@ function registerDiceSoNice(dice3d) {
         "d6"
       );
       registered.push(v.id);
+
+      // Précharge les images des faces (sinon rendu en texte au lancer).
+      const preset = dsnSystems(dice3d)?.get(v.id)?.dice?.get("d6");
+      if (preset?.loadTextures) {
+        loadPromises.push(
+          preset.loadTextures().catch((err) =>
+            console.warn(`${MODULE_ID} | Préchargement des faces « ${v.id} » échoué :`, err)
+          )
+        );
+      }
     } catch (err) {
       console.error(`${MODULE_ID} | Échec d'enregistrement de la variante « ${v.id} » :`, err);
     }
   }
+  await Promise.allSettled(loadPromises);
+
   const sys = dsnSystems(dice3d);
   const present = sys ? VARIANTS.map((v) => v.id).filter((id) => sys.has(id)) : registered;
   console.log(
-    `${MODULE_ID} | ${present.length}/${VARIANTS.length} systèmes de dés The Expanse enregistrés dans Dice So Nice :`,
+    `${MODULE_ID} | ${present.length}/${VARIANTS.length} systèmes de dés The Expanse enregistrés + faces préchargées :`,
     present
   );
   return present;
@@ -166,7 +184,7 @@ Hooks.once("ready", () => {
 
 Hooks.once("diceSoNiceReady", async (dice3d) => {
   try {
-    const present = registerDiceSoNice(dice3d);
+    const present = await registerDiceSoNice(dice3d);
     // Répare d'abord toute apparence orpheline (évite le crash DiceFactory.create).
     await healStaleAppearance(dice3d);
     const chosen = game.settings.get(MODULE_ID, "defaultDiceStyle");
