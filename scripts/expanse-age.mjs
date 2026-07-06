@@ -3,26 +3,23 @@
  * Module addon pour FoundryVTT v13 / système age-system (mode The Expanse).
  *
  * Rôle : reproduire les dés officiels de The Expanse (mêmes images de faces et
- * mêmes couleurs par faction que le système officiel Foxfyre/expanse) via Dice So Nice,
- * et les APPLIQUER automatiquement aux jets d'age-system (qui lance de simples d6).
+ * mêmes couleurs par faction) via Dice So Nice, et les appliquer automatiquement
+ * aux jets d'age-system (qui lance de simples d6).
  *
- * Fonctionnement (API Dice So Nice) :
- *  - Les presets de faces sont indexés par (système, type). L'art des faces est porté
- *    par le SYSTÈME, pas par le jeu de couleurs. On enregistre donc UN système DSN par
- *    variante (faction × sombre/clair), chacun avec un unique preset d6.
- *  - age-system lance des d6 réels et lit l'apparence DSN du joueur
- *    (flags["dice-so-nice"].appearance.global.system) pour les afficher. On écrit donc
- *    cette apparence selon la faction choisie dans le réglage du module → les faces
- *    Expanse s'affichent sans que le joueur ait à configurer Dice So Nice.
+ * API Dice So Nice : les presets de faces sont indexés par (système, type). L'art des
+ * faces est porté par le SYSTÈME. On enregistre donc UN système DSN par variante
+ * (faction × sombre/clair), chacun avec un unique preset d6. age-system lit l'apparence
+ * DSN du joueur (flags["dice-so-nice"].appearance.global.system) pour afficher ses d6 :
+ * on écrit donc cette apparence selon la faction choisie.
+ *
+ * Robustesse : on ne fixe l'apparence QUE si le système est réellement enregistré, et on
+ * répare toute apparence « expanse-* » orpheline (sinon DSN plante au lancer : voir
+ * DiceFactory.create → this.systems.get(appearance.system).getCacheString()).
  */
 
 const MODULE_ID = "expanse-age-fr";
 const CATEGORY = "The Expanse (AGE)";
 
-/**
- * 8 variantes = 4 factions × {sombre, clair}. Couleurs officielles (Foxfyre/expanse).
- * bg/edge = couleur de faction ; fg = couleur de contraste des reliefs.
- */
 const VARIANTS = [
   { id: "expanse-earth-dark",     faction: "earth",    style: "dark",  styleKey: "EXPANSE_AGE.Style.EarthDark",     bg: "#0019FF", fg: "#FFFFFF" },
   { id: "expanse-earth-light",    faction: "earth",    style: "light", styleKey: "EXPANSE_AGE.Style.EarthLight",    bg: "#FFFFFF", fg: "#0019FF" },
@@ -44,61 +41,92 @@ const bumpPath = (faction, n) =>
 const faceLabels = (faction, style) => [1, 2, 3, 4, 5, 6].map((n) => facePath(faction, n, style));
 const bumpMaps = (faction) => [1, 2, 3, 4, 5, 6].map((n) => bumpPath(faction, n));
 
-/** Enregistre un système DSN + colorset + preset d6 par variante. */
+/** Retourne la Map des systèmes DSN si accessible, sinon null. */
+function dsnSystems(dice3d) {
+  return dice3d?.DiceFactory?.systems ?? null;
+}
+
+/** Enregistre un système DSN + colorset + preset d6 par variante. Retourne les ids OK. */
 function registerDiceSoNice(dice3d) {
+  const registered = [];
   for (const v of VARIANTS) {
     const label = game.i18n.localize(v.styleKey);
-
-    dice3d.addSystem({ id: v.id, name: label, group: CATEGORY }, "default");
-
-    dice3d.addColorset(
-      {
-        name: v.id,
-        description: label,
-        category: CATEGORY,
-        foreground: v.fg,
-        background: v.bg,
-        outline: v.bg,
-        edge: v.bg,
-        texture: "none",
-        material: "plastic",
-        font: "Arial"
-      },
-      "default"
-    );
-
-    dice3d.addDicePreset(
-      {
-        type: "d6",
-        system: v.id,
-        labels: faceLabels(v.faction, v.style),
-        bumpMaps: bumpMaps(v.faction),
-        colorset: v.id
-      },
-      "d6"
-    );
+    try {
+      dice3d.addSystem({ id: v.id, name: label, group: CATEGORY }, "default");
+      dice3d.addColorset(
+        {
+          name: v.id,
+          description: label,
+          category: CATEGORY,
+          foreground: v.fg,
+          background: v.bg,
+          outline: v.bg,
+          edge: v.bg,
+          texture: "none",
+          material: "plastic",
+          font: "Arial"
+        },
+        "default"
+      );
+      dice3d.addDicePreset(
+        {
+          type: "d6",
+          system: v.id,
+          labels: faceLabels(v.faction, v.style),
+          bumpMaps: bumpMaps(v.faction),
+          colorset: v.id
+        },
+        "d6"
+      );
+      registered.push(v.id);
+    } catch (err) {
+      console.error(`${MODULE_ID} | Échec d'enregistrement de la variante « ${v.id} » :`, err);
+    }
   }
+  const sys = dsnSystems(dice3d);
+  const present = sys ? VARIANTS.map((v) => v.id).filter((id) => sys.has(id)) : registered;
+  console.log(
+    `${MODULE_ID} | ${present.length}/${VARIANTS.length} systèmes de dés The Expanse enregistrés dans Dice So Nice :`,
+    present
+  );
+  return present;
+}
 
-  console.log(`${MODULE_ID} | ${VARIANTS.length} apparences de dés The Expanse enregistrées (Dice So Nice).`);
+/** Vrai si le système DSN est réellement disponible (sinon l'utiliser ferait planter DSN). */
+function isSystemUsable(dice3d, id) {
+  const sys = dsnSystems(dice3d);
+  if (sys) return sys.has(id);
+  return !!VARIANT_BY_ID[id]; // à défaut d'accès, on se fie à nos variantes
 }
 
 /**
- * Écrit l'apparence DSN du joueur pour utiliser la variante donnée (ou la retire).
- * age-system lit flags["dice-so-nice"].appearance.global.system → les faces s'appliquent.
+ * Répare une apparence DSN « expanse-* » qui pointerait vers un système non enregistré
+ * (sinon DSN plante au lancer). Retourne true si une réparation a eu lieu.
  */
-async function applyUserAppearance(variantId, { force = false } = {}) {
-  if (!game.user) return;
+async function healStaleAppearance(dice3d) {
+  const appearance = game.user?.getFlag("dice-so-nice", "appearance");
+  const sysId = appearance?.global?.system;
+  if (!sysId || !String(sysId).startsWith("expanse-")) return false;
+  if (isSystemUsable(dice3d, sysId)) return false;
+
+  const fixed = foundry.utils.deepClone(appearance);
+  fixed.global.system = "standard";
+  await game.user.setFlag("dice-so-nice", "appearance", fixed);
+  console.warn(`${MODULE_ID} | Apparence orpheline « ${sysId} » réinitialisée sur « standard ».`);
+  return true;
+}
+
+/** Écrit l'apparence DSN du joueur pour utiliser la variante (uniquement si utilisable). */
+async function applyUserAppearance(dice3d, variantId) {
+  if (!game.user || !variantId || variantId === "none") return;
+  if (!isSystemUsable(dice3d, variantId)) {
+    ui.notifications?.warn(
+      `The Expanse — Addon : le système de dés « ${variantId} » n'est pas disponible dans Dice So Nice.`
+    );
+    return;
+  }
   const appearance = foundry.utils.deepClone(game.user.getFlag("dice-so-nice", "appearance") ?? {});
   appearance.global = appearance.global ?? {};
-  const currentSystem = appearance.global.system ?? "standard";
-
-  if (!variantId || variantId === "none") return; // « Aucune » : on ne touche à rien.
-
-  // Au chargement (force=false) : n'appliquer que si le joueur n'a pas déjà choisi une apparence.
-  // Sur changement de réglage (force=true) : appliquer immédiatement.
-  const isCustom = currentSystem !== "standard" && currentSystem !== variantId;
-  if (!force && isCustom) return;
-
   appearance.global.system = variantId;
   appearance.global.colorset = variantId;
   await game.user.setFlag("dice-so-nice", "appearance", appearance);
@@ -117,11 +145,13 @@ Hooks.once("init", () => {
     default: "expanse-earth-dark",
     choices,
     onChange: (value) => {
-      applyUserAppearance(value, { force: true }).then(() => {
-        ui.notifications?.info(
-          "The Expanse — Addon : apparence de dés appliquée. Lancez un test pour la voir."
+      const dice3d = game.dice3d;
+      if (value === "none") return;
+      if (dice3d) {
+        applyUserAppearance(dice3d, value).then(() =>
+          ui.notifications?.info("The Expanse — Addon : apparence de dés appliquée. Lancez un test pour la voir.")
         );
-      });
+      }
     }
   });
 });
@@ -136,10 +166,12 @@ Hooks.once("ready", () => {
 
 Hooks.once("diceSoNiceReady", async (dice3d) => {
   try {
-    registerDiceSoNice(dice3d);
+    const present = registerDiceSoNice(dice3d);
+    // Répare d'abord toute apparence orpheline (évite le crash DiceFactory.create).
+    await healStaleAppearance(dice3d);
     const chosen = game.settings.get(MODULE_ID, "defaultDiceStyle");
-    if (VARIANT_BY_ID[chosen]) await applyUserAppearance(chosen, { force: true });
+    if (present.includes(chosen)) await applyUserAppearance(dice3d, chosen);
   } catch (err) {
-    console.error(`${MODULE_ID} | Échec de l'enregistrement Dice So Nice :`, err);
+    console.error(`${MODULE_ID} | Échec de l'intégration Dice So Nice :`, err);
   }
 });
