@@ -148,6 +148,19 @@ async function applyUserAppearance(dice3d, variantId) {
   appearance.global.system = variantId;
   appearance.global.colorset = variantId;
   await game.user.setFlag("dice-so-nice", "appearance", appearance);
+
+  // age-system force la couleur du dé de Péripéties via son réglage « stuntSoNice »
+  // (défaut « bronze » = doré). On l'aligne sur notre colorset Expanse pour un dé
+  // cohérent et lisible (même faction que les dés d'attaque).
+  if (game.system?.id === "age-system" && game.settings.settings.has("age-system.stuntSoNice")) {
+    try {
+      if (game.settings.get("age-system", "stuntSoNice") !== variantId) {
+        await game.settings.set("age-system", "stuntSoNice", variantId);
+      }
+    } catch (err) {
+      console.warn(`${MODULE_ID} | Impossible d'aligner le dé de Péripéties (age-system.stuntSoNice) :`, err);
+    }
+  }
 }
 
 Hooks.once("init", () => {
